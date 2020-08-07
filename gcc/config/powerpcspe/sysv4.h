@@ -757,24 +757,59 @@ ENDIAN_SELECT(" -mbig", " -mlittle", DEFAULT_ASM_ENDIAN)
 #define CRTOFFLOADEND ""
 #endif
 
-#ifdef HAVE_LD_PIE
-#define	STARTFILE_LINUX_SPEC "\
-%{!shared: %{pg|p|profile:gcrt1.o%s;pie:Scrt1.o%s;:crt1.o%s}} \
-%{mnewlib:ecrti.o%s;:crti.o%s} \
-%{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s} \
-" CRTOFFLOADBEGIN
+/* STARTFILE_LINUX_SPEC should be the same as GNU_USER_TARGET_STARTFILE_SPEC
+   but with the mnewlib ecrti.o%s selection substituted for crti.o%s.  */
+#if defined HAVE_LD_PIE
+#define	STARTFILE_LINUX_SPEC \
+  "%{shared:; \
+     pg|p|profile:%{static-pie:grcrt1.o%s;:gcrt1.o%s}; \
+     static:crt1.o%s; \
+     static-pie:rcrt1.o%s; \
+     " PIE_SPEC ":Scrt1.o%s; \
+     :crt1.o%s} \
+   %{mnewlib:ecrti.o%s;:crti.o%s} \
+   %{static:crtbeginT.o%s; \
+     shared|static-pie|" PIE_SPEC ":crtbeginS.o%s; \
+     :crtbegin.o%s} \
+   %{fvtable-verify=none:%s; \
+     fvtable-verify=preinit:vtv_start_preinit.o%s; \
+     fvtable-verify=std:vtv_start.o%s} \
+   " CRTOFFLOADBEGIN
 #else
-#define	STARTFILE_LINUX_SPEC "\
-%{!shared: %{pg|p|profile:gcrt1.o%s;:crt1.o%s}} \
-%{mnewlib:ecrti.o%s;:crti.o%s} \
-%{static:crtbeginT.o%s;shared|pie:crtbeginS.o%s;:crtbegin.o%s} \
-" CRTOFFLOADBEGIN
+#define	STARTFILE_LINUX_SPEC \
+  "%{shared:; \
+     pg|p|profile:gcrt1.o%s; \
+     :crt1.o%s} \
+   %{mnewlib:ecrti.o%s;:crti.o%s} \
+   %{static:crtbeginT.o%s; \
+     shared|pie|static-pie:crtbeginS.o%s; \
+     :crtbegin.o%s} \
+   " CRTOFFLOADBEGIN
 #endif
 
-#define	ENDFILE_LINUX_SPEC "\
-%{shared|pie:crtendS.o%s;:crtend.o%s} \
-%{mnewlib:ecrtn.o%s;:crtn.o%s} \
-" CRTOFFLOADEND
+/* ENDFILE_LINUX_SPEC should be the same as GNU_USER_TARGET_ENDFILE_SPEC
+   but with the mnewlib ecrtn.o%s selection substituted for crtn.o%s.  */
+#if defined HAVE_LD_PIE
+#define ENDFILE_LINUX_SPEC \
+  "%{fvtable-verify=none:%s; \
+     fvtable-verify=preinit:vtv_end_preinit.o%s; \
+     fvtable-verify=std:vtv_end.o%s} \
+   %{static:crtend.o%s; \
+     shared|static-pie|" PIE_SPEC ":crtendS.o%s; \
+     :crtend.o%s} \
+   %{mnewlib:ecrtn.o%s;:crtn.o%s} \
+   " CRTOFFLOADEND
+#else
+#define ENDFILE_LINUX_SPEC \
+  "%{fvtable-verify=none:%s; \
+     fvtable-verify=preinit:vtv_end_preinit.o%s; \
+     fvtable-verify=std:vtv_end.o%s} \
+   %{static:crtend.o%s; \
+     shared|pie|static-pie:crtendS.o%s; \
+     :crtend.o%s} \
+   %{mnewlib:ecrtn.o%s;:crtn.o%s} \
+   " CRTOFFLOADEND
+#endif
 
 #define LINK_START_LINUX_SPEC ""
 
